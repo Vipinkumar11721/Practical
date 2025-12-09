@@ -6,7 +6,7 @@ const methodOverride = require('method-override');
 const ejsMate = require('ejs-mate');
 const ExpressError = require('./utils/ExpressError.js');
 const session = require('express-session');
-const { MongoStore } = require('connect-mongo');
+const MongoStore = require('connect-mongo');
 const flash = require('connect-flash');
 const passport = require('passport');
 const LocalStrategy = require('passport-local');
@@ -42,7 +42,7 @@ async function connectWithRetry(maxAttempts = 2, delayMs = 3000) {
 }
 
 connectWithRetry().then(() => {
-  const store = new MongoStore({ 
+  const store = MongoStore.create({ 
     mongoUrl: dbUrl, 
     touchAfter: 24 * 3600 
   });
@@ -76,6 +76,13 @@ connectWithRetry().then(() => {
   app.use('/', userRouter);
 
   app.get('/', (req, res) => res.render('index', { what: 'best', who: 'me' }));
+
+  // Safe health check for environment variables (returns only booleans, not secrets)
+  app.get('/env-check', (req, res) => {
+    const hasAtlas = !!process.env.ATLUSDB_URL;
+    const hasSecret = !!process.env.SECRET;
+    res.json({ atlUsDbUrlSet: hasAtlas, secretSet: hasSecret });
+  });
 
   app.use((req, res, next) => next(new ExpressError(404, 'Page not found')));
 
