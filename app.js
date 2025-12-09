@@ -81,7 +81,8 @@ connectWithRetry().then(() => {
   app.get('/env-check', (req, res) => {
     const hasAtlas = !!process.env.ATLUSDB_URL;
     const hasSecret = !!process.env.SECRET;
-    res.json({ atlUsDbUrlSet: hasAtlas, secretSet: hasSecret });
+    const hasCloud = !!(process.env.CLOUD_NAME && process.env.CLOUD_API_KEY && process.env.CLOUD_API_SECRET);
+    res.json({ atlUsDbUrlSet: hasAtlas, secretSet: hasSecret, cloudinarySet: hasCloud });
   });
 
   app.use((req, res, next) => next(new ExpressError(404, 'Page not found')));
