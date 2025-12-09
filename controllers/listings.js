@@ -28,19 +28,24 @@ module.exports.showListing = async (req, res) => {
 };
 
 module.exports.createListing = async (req, res, next) => {
-  let url = req.file.path;
-  let filename = req.file.filename;
-  console.log(url, "..", filename);
-  const newListing = new Listing(req.body.listing);
-  console.log(req.user);
-  newListing.owner = req.user._id;
-  newListing.image = {
-    url: url,
-    filename: filename
-  };
-  await newListing.save();
-  req.flash("success", "Successfully created a new listing!");
-  res.redirect("/listings");
+  try {
+    const newListing = new Listing(req.body.listing);
+    if (req.user) newListing.owner = req.user._id;
+
+    // If a file was uploaded, attach its Cloudinary info; otherwise leave image undefined
+    if (req.file) {
+      const url = req.file.path;
+      const filename = req.file.filename;
+      newListing.image = { url, filename };
+    }
+
+    await newListing.save();
+    req.flash("success", "Successfully created a new listing!");
+    return res.redirect("/listings");
+  } catch (err) {
+    console.error('Error creating listing:', err);
+    return next(err);
+  }
 };
 
 
@@ -64,9 +69,14 @@ module.exports.updateListing = async (req, res) => {
          filename: req.file.filename
        };
      }
-     await Listing.findByIdAndUpdate(id, updateData);
+     try {
+       await Listing.findByIdAndUpdate(id, updateData);
        req.flash("success", "Successfully updated the listing!");
-    res.redirect("/listings");
+       return res.redirect("/listings");
+     } catch (err) {
+       console.error('Error updating listing:', err);
+       return res.redirect('/listings');
+     }
 };
 
 
