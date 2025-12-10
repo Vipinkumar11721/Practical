@@ -23,10 +23,31 @@ function safeUpload(fieldName) {
   };
 }
 
+// Normalize bracket-style form fields (e.g. listing[title]) into a nested object
+function normalizeListingBody(req, res, next) {
+  try {
+    if (req.body && !req.body.listing) {
+      const listing = {};
+      for (const key of Object.keys(req.body)) {
+        const m = key.match(/^listing\[(.+)\]$/);
+        if (m) {
+          listing[m[1]] = req.body[key];
+        }
+      }
+      if (Object.keys(listing).length) {
+        req.body.listing = listing;
+      }
+    }
+  } catch (e) {
+    console.error('Error normalizing listing body:', e);
+  }
+  next();
+}
+
 router
   .route("/")
     .get(wrapAsync(listingsController.index))
-    .post(isLoggedIn, validateListing, safeUpload("listing[image]"), wrapAsync(listingsController.createListing));
+    .post(isLoggedIn, safeUpload("listing[image]"), normalizeListingBody, validateListing, wrapAsync(listingsController.createListing));
 
 
 
@@ -36,7 +57,7 @@ router.get("/new", saveRedirectUrl, isLoggedIn, listingsController.renderNewForm
 router 
   .route("/:id")
     .get( wrapAsync(listingsController.showListing))
-    .put(isLoggedIn, isOwner, validateListing, safeUpload("listing[image]"), wrapAsync(listingsController.updateListing))
+    .put(isLoggedIn, isOwner, safeUpload("listing[image]"), normalizeListingBody, validateListing, wrapAsync(listingsController.updateListing))
     .delete(isLoggedIn, isOwner, wrapAsync(listingsController.destroyListing));   
 
 

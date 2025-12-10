@@ -39,6 +39,12 @@ module.exports.createListing = async (req, res, next) => {
       newListing.image = { url, filename };
     }
 
+    // If the upload middleware reported an error, log it and notify the user
+    if (req.fileUploadError) {
+      console.error('File upload error during createListing:', req.fileUploadError);
+      req.flash('error', 'Image upload failed. Listing saved without image.');
+    }
+
     await newListing.save();
     req.flash("success", "Successfully created a new listing!");
     return res.redirect("/listings");
@@ -71,6 +77,10 @@ module.exports.updateListing = async (req, res) => {
      }
      try {
        await Listing.findByIdAndUpdate(id, updateData);
+       if (req.fileUploadError) {
+         console.error('File upload error during updateListing:', req.fileUploadError);
+         req.flash('error', 'Image upload failed. Listing updated without changing the image.');
+       }
        req.flash("success", "Successfully updated the listing!");
        return res.redirect("/listings");
      } catch (err) {
